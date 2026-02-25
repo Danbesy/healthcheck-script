@@ -1,0 +1,4 @@
+[
+  {"name": "google", "ip": "google.com", "port": 80},
+  {"name": "localhost", "ip": "127.0.0.1", "port": 22}
+]
