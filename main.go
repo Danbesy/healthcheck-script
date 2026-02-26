@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -44,6 +45,20 @@ func checkServer(s Server) bool {
 	return true
 }
 
+func saveServer(filename string, servers []Server) error {
+	data, err := json.MarshalIndent(servers, "", " ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(filename, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	fmt.Println("Healthcheck script has started!")
 
@@ -66,5 +81,49 @@ func main() {
 		} else {
 			fmt.Println("FAIL", server.Name, "недоступен")
 		}
+	}
+
+	if len(os.Args) < 2 {
+		fmt.Println("Использование: add")
+		return
+	}
+
+	command := os.Args[1]
+
+	switch command {
+
+	case "add":
+		if len(os.Args) < 5 {
+			fmt.Println("Использование: add <name> <ip> <port>")
+			return
+		}
+
+		name := os.Args[2]
+		ip := os.Args[3]
+
+		port, err := strconv.Atoi(os.Args[4])
+		if err != nil {
+			fmt.Println("Порт должен быть числом")
+			return
+		}
+
+		newServer := Server{
+			Name: name,
+			IP:   ip,
+			Port: port,
+		}
+
+		servers = append(servers, newServer)
+
+		err = saveServer("servers.json", servers)
+		if err != nil {
+			fmt.Println("Ошибка сохранения сервера:", err)
+			return
+		}
+
+		fmt.Println("Сервер добавлен:", name)
+
+	default:
+		fmt.Println("Неизвестная команда")
 	}
 }
