@@ -59,6 +59,25 @@ func saveServer(filename string, servers []Server) error {
 	return nil
 }
 
+func removeServer(servers []Server, ip string) ([]Server, error) {
+	var updated []Server
+	found := false
+
+	for _, s := range servers {
+		if s.IP == ip {
+			found = true
+			continue
+		}
+		updated = append(updated, s)
+	}
+
+	if !found {
+		return servers, fmt.Errorf("Сервер %s не найден", ip)
+	}
+
+	return updated, nil
+}
+
 func main() {
 	fmt.Println("Healthcheck script has started!")
 
@@ -84,7 +103,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		fmt.Println("Использование: add")
+		fmt.Println("Использование: add, remove")
 		return
 	}
 
@@ -122,6 +141,28 @@ func main() {
 		}
 
 		fmt.Println("Сервер добавлен:", name)
+
+	case "remove":
+		if len(os.Args) < 3 {
+			fmt.Println("Использование: remove <ip>")
+			return
+		}
+
+		ip := os.Args[2]
+
+		servers, err = removeServer(servers, ip)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		err = saveServer("servers.json", servers)
+		if err != nil {
+			fmt.Println("Ошибка сохранения в файл:", err)
+			return
+		}
+
+		fmt.Println("Сервер удален:", ip)
 
 	default:
 		fmt.Println("Неизвестная команда")
