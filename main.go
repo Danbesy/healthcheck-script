@@ -79,31 +79,33 @@ func removeServer(servers []Server, ip string) ([]Server, error) {
 }
 
 func main() {
-	fmt.Println("Healthcheck script has started!")
-
 	servers, err := loadServers("servers.json")
 	if err != nil {
 		fmt.Println("Ошибка:", err)
 		return
 	}
 
-	fmt.Println("Список найденных серверов:")
-
-	for _, server := range servers {
-		fmt.Println("Имя сервера:", server.Name, "Айпи сервера:", server.IP, "Порт сервера:", server.Port)
-	}
-
-	fmt.Println("Проверка доступности серверов:")
-	for _, server := range servers {
-		if checkServer(server) {
-			fmt.Println("OK", server.Name, "доступен")
-		} else {
-			fmt.Println("FAIL", server.Name, "недоступен")
-		}
-	}
-
 	if len(os.Args) < 2 {
+		fmt.Println("Healthcheck скрипт успешно запущен!")
+		fmt.Println("-------------------------")
 		fmt.Println("Использование: add, remove")
+		fmt.Println("-------------------------")
+		fmt.Println("Список найденных серверов:")
+
+		for _, server := range servers {
+			fmt.Println("Имя сервера:", server.Name, "Айпи сервера:", server.IP, "Порт сервера:", server.Port)
+		}
+
+		fmt.Println("-------------------------")
+
+		fmt.Println("Проверка доступности серверов:")
+		for _, server := range servers {
+			if checkServer(server) {
+				fmt.Println("OK", server.Name, "доступен")
+			} else {
+				fmt.Println("FAIL", server.Name, "недоступен")
+			}
+		}
 		return
 	}
 
