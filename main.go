@@ -59,12 +59,12 @@ func saveServer(filename string, servers []Server) error {
 	return nil
 }
 
-func removeServer(servers []Server, ip string) ([]Server, error) {
+func removeServer(servers []Server, ip string, port int) ([]Server, error) {
 	var updated []Server
 	found := false
 
 	for _, s := range servers {
-		if s.IP == ip {
+		if s.IP == ip && s.Port == port {
 			found = true
 			continue
 		}
@@ -72,7 +72,7 @@ func removeServer(servers []Server, ip string) ([]Server, error) {
 	}
 
 	if !found {
-		return servers, fmt.Errorf("Сервер %s не найден", ip)
+		return servers, fmt.Errorf("Сервер %s:%d не найден", ip, port)
 	}
 
 	return updated, nil
@@ -145,14 +145,20 @@ func main() {
 		fmt.Println("Сервер добавлен:", name)
 
 	case "remove":
-		if len(os.Args) < 3 {
-			fmt.Println("Использование: remove <ip>")
+		if len(os.Args) < 4 {
+			fmt.Println("Использование: remove <ip> <port>")
 			return
 		}
 
 		ip := os.Args[2]
 
-		servers, err = removeServer(servers, ip)
+		port, err := strconv.Atoi(os.Args[3])
+		if err != nil {
+			fmt.Println("Порт должен быть числом")
+			return
+		}
+
+		servers, err = removeServer(servers, ip, port)
 		if err != nil {
 			fmt.Println(err)
 			return
