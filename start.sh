@@ -29,7 +29,7 @@ confirm_delete_server() {
         case "$answer" in
             [Yy])
                 echo "Вы выбрали YES. Удаление сервера..."
-                go run main.go remove "$ip"
+                go run main.go remove "$ip" "$port"
                 read -p "Нажмите Enter чтобы продолжить..."
                 break
             ;;
@@ -74,7 +74,9 @@ while true; do
         2)
             read -p "Введите айпи сервера который хотите удалить (например: 127.0.0.1)... " ip
             echo "-------------------------"
-            echo "Вы действительно хотите удалить сервер у которого айпи: $ip?"
+            read -p "Теперь укажите порт сервера (например: 80)... " port
+            echo "-------------------------"
+            echo "Данные сервера который вы хотите удалить: $ip:$port"
             confirm_delete_server
         ;;
         *)
