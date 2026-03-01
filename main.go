@@ -88,7 +88,7 @@ func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Healthcheck скрипт успешно запущен!")
 		fmt.Println("-------------------------")
-		fmt.Println("Использование: add, remove")
+		fmt.Println("Использование: add, remove, list, check")
 		fmt.Println("-------------------------")
 		fmt.Println("Список найденных серверов:")
 
@@ -171,6 +171,36 @@ func main() {
 		}
 
 		fmt.Println("Сервер удален:", ip)
+
+	case "list":
+		if len(os.Args) > 2 {
+			fmt.Println("Использование: list (без дополнительных аргументов)")
+			return
+		}
+
+		fmt.Println("Список найденных серверов:")
+
+		for _, server := range servers {
+			fmt.Println("Имя сервера:", server.Name, "Айпи сервера:", server.IP, "Порт сервера:", server.Port)
+		}
+		return
+
+	case "check":
+		if len(os.Args) > 2 {
+			fmt.Println("Использование: check (без дополнительных аргументов)")
+			return
+		}
+
+		fmt.Println("Проверка доступности серверов:")
+		for _, server := range servers {
+			if checkServer(server) {
+				fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+			} else {
+				fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+
+			}
+		}
+		return
 
 	default:
 		fmt.Println("Неизвестная команда")
