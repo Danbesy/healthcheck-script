@@ -133,6 +133,15 @@ func sendMessage(botToken string, chatID int, text string) error {
 	return nil
 }
 
+func hasFlag(flag string) bool {
+	for _, arg := range os.Args[2:] {
+		if arg == flag {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 	interval := getEnvInt("CHECK_INTERVAL", 0)
 	botToken := getEnv("BOT_TOKEN")
@@ -259,12 +268,12 @@ func main() {
 		return
 
 	case "check":
-		if len(os.Args) > 2 {
-			fmt.Println("Использование: check (без дополнительных аргументов)")
+		if len(os.Args) > 3 {
+			fmt.Println("Использование: check (флаг --once для одноразового запуска)")
 			return
 		}
 
-		if interval <= 0 {
+		if interval <= 0 || hasFlag("--once") {
 			fmt.Println("Проверка доступности серверов:")
 			for _, server := range servers {
 				if checkServer(server) {
