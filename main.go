@@ -101,9 +101,10 @@ func main() {
 		fmt.Println("Проверка доступности серверов:")
 		for _, server := range servers {
 			if checkServer(server) {
-				fmt.Println("OK", server.Name, "доступен")
+				fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
 			} else {
-				fmt.Println("FAIL", server.Name, "недоступен")
+				fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+
 			}
 		}
 		return
