@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -90,8 +93,52 @@ func getEnvInt(key string, defaultVal int) int {
 	return val
 }
 
+func getEnv(key string) string {
+	_ = godotenv.Load()
+
+	value := os.Getenv(key)
+	if value == "" {
+		fmt.Printf("Переменная %s не задана", key)
+	}
+	return value
+}
+
+func sendMessage(botToken string, chatID int, text string) error {
+	payload := map[string]interface{}{
+		"chat_id": chatID,
+		"text":    text,
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Не удалось отправить сообщение: %s", string(body))
+	}
+	return nil
+}
+
 func main() {
 	interval := getEnvInt("CHECK_INTERVAL", 0)
+	botToken := getEnv("BOT_TOKEN")
+	chatID := getEnvInt("CHAT_ID", 0)
+	sendSuccessNotification := getEnv("SEND_SUCCESS_NOTIFICATION")
+	sendFailureNotification := getEnv("SEND_FAILURE_NOTIFICATION")
 
 	servers, err := loadServers("servers.json")
 	if err != nil {
@@ -116,9 +163,20 @@ func main() {
 		for _, server := range servers {
 			if checkServer(server) {
 				fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+				if sendSuccessNotification == "yes" {
+					err := sendMessage(botToken, chatID, fmt.Sprintf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port))
+					if err != nil {
+						fmt.Println("Ошибка отправки сообщения:", err)
+					}
+				}
 			} else {
 				fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
-
+				if sendFailureNotification == "yes" {
+					err := sendMessage(botToken, chatID, fmt.Sprintf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port))
+					if err != nil {
+						fmt.Println("Ошибка отправки сообщения:", err)
+					}
+				}
 			}
 		}
 		return
@@ -211,8 +269,20 @@ func main() {
 			for _, server := range servers {
 				if checkServer(server) {
 					fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+					if sendSuccessNotification == "yes" {
+						err := sendMessage(botToken, chatID, fmt.Sprintf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port))
+						if err != nil {
+							fmt.Println("Ошибка отправки сообщения:", err)
+						}
+					}
 				} else {
 					fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+					if sendFailureNotification == "yes" {
+						err := sendMessage(botToken, chatID, fmt.Sprintf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port))
+						if err != nil {
+							fmt.Println("Ошибка отправки сообщения:", err)
+						}
+					}
 				}
 			}
 			return
@@ -222,8 +292,20 @@ func main() {
 				for _, server := range servers {
 					if checkServer(server) {
 						fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+						if sendSuccessNotification == "yes" {
+							err := sendMessage(botToken, chatID, fmt.Sprintf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port))
+							if err != nil {
+								fmt.Println("Ошибка отправки сообщения:", err)
+							}
+						}
 					} else {
 						fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+						if sendFailureNotification == "yes" {
+							err := sendMessage(botToken, chatID, fmt.Sprintf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port))
+							if err != nil {
+								fmt.Println("Ошибка отправки сообщения:", err)
+							}
+						}
 					}
 				}
 				time.Sleep(time.Duration(interval) * time.Second)
