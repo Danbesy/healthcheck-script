@@ -1,0 +1,6 @@
+services:
+  app:
+    build: .
+    container_name: healthcheck-app
+    volumes:
+      - ./servers.json:/app/servers.json
