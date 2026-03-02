@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Server struct {
@@ -78,7 +80,19 @@ func removeServer(servers []Server, ip string, port int) ([]Server, error) {
 	return updated, nil
 }
 
+func getEnvInt(key string, defaultVal int) int {
+	_ = godotenv.Load()
+	valStr := os.Getenv(key)
+	val, err := strconv.Atoi(valStr)
+	if err != nil {
+		return defaultVal
+	}
+	return val
+}
+
 func main() {
+	interval := getEnvInt("CHECK_INTERVAL", 0)
+
 	servers, err := loadServers("servers.json")
 	if err != nil {
 		fmt.Println("Ошибка:", err)
@@ -192,16 +206,29 @@ func main() {
 			return
 		}
 
-		fmt.Println("Проверка доступности серверов:")
-		for _, server := range servers {
-			if checkServer(server) {
-				fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
-			} else {
-				fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
-
+		if interval <= 0 {
+			fmt.Println("Проверка доступности серверов:")
+			for _, server := range servers {
+				if checkServer(server) {
+					fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+				} else {
+					fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+				}
+			}
+			return
+		} else {
+			for {
+				fmt.Println("Проверка доступности серверов:")
+				for _, server := range servers {
+					if checkServer(server) {
+						fmt.Printf("OK. %s - %s:%d доступен\n", server.Name, server.IP, server.Port)
+					} else {
+						fmt.Printf("FAIL. %s - %s:%d недоступен\n", server.Name, server.IP, server.Port)
+					}
+				}
+				time.Sleep(time.Duration(interval) * time.Second)
 			}
 		}
-		return
 
 	default:
 		fmt.Println("Неизвестная команда")
