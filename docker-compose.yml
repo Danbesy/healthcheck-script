@@ -4,3 +4,4 @@ services:
     container_name: healthcheck-app
     volumes:
       - ./servers.json:/app/servers.json
+      - ./.env:/app/.env
