@@ -7,4 +7,4 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/ .
 ENTRYPOINT ["./app"]
-CMD ["check"]
+CMD ["check", "--once"]
