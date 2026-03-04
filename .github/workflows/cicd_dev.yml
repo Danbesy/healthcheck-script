@@ -1,0 +1,97 @@
+name: CI/CD Pipeline - dev
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+      REPO: ${{ secrets.REPO }}
+      DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+      IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+    steps:
+      - name: Show commit info
+        run: |
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+
+      - name: Check secrets
+        run: |
+          set -u
+          : ${BOT_TOKEN:?BOT_TOKEN is not set}
+          : ${CHAT_ID:?CHAT_ID is not set}
+          : ${REPO:?REPO is not set}
+          : ${DEPLOY_DIR:?DEPLOY_DIR is not set}
+          : ${IMAGE_NAME:?IMAGE_NAME is not set}
+          : ${CONTAINER_NAME:?CONTAINER_NAME is not set}
+          : ${SSH_HOST:?SSH_HOST is not set}
+          : ${SSH_USERNAME:?SSH_USERNAME is not set}
+          : ${SSH_KEY:?SSH_KEY is not set}
+
+          echo "✅ All secrets are set!"
+
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Run healthcheck container
+        run: |
+          docker run --rm $IMAGE_NAME
+          echo "✅ Healthcheck passed"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: ${{ needs.build-and-test.result == 'success' }}
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.9
+        env:
+          REPO: ${{ secrets.REPO }}
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+          CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: REPO, DEPLOY_DIR, IMAGE_NAME, CONTAINER_NAME
+          script: |
+            set -e
+            echo "DEPLOY_DIR=$DEPLOY_DIR, IMAGE_NAME=$IMAGE_NAME, CONTAINER_NAME=$CONTAINER_NAME"
+
+            if [ ! -d "$DEPLOY_DIR/.git" ]; then
+              git clone -b dev git@github.com:$REPO.git "$DEPLOY_DIR"
+            fi
+
+            cd "$DEPLOY_DIR"
+            git fetch origin dev
+            git reset --hard origin/dev
+
+            if [ -z "$(docker images -q "$IMAGE_NAME")" ]; then
+              echo "❌ Образ $IMAGE_NAME отсутствует на сервере, создаём образ..."
+              docker build -t "$IMAGE_NAME" .
+              echo "✅ Образ успешно создан"
+            else
+              echo "✅ Образ $IMAGE_NAME успешно найден на сервере."
+            fi
+
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
+            echo "Запускаем контейнер $CONTAINER_NAME с образом $IMAGE_NAME"
+            docker run -d --name "$CONTAINER_NAME" "$IMAGE_NAME"
